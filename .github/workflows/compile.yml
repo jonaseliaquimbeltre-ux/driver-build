@@ -1,0 +1,29 @@
+name: Build RTL8188EU Kernel Module
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential bc bison flex libssl-dev libncurses-dev git clang lld llvm crossbuild-essential-arm64
+
+      - name: Clone Android Kernel
+        run: |
+          git clone --depth 1 -b android15-6.6 https://android.googlesource.com/kernel/common
+
+      - name: Build Module
+        run: |
+          cd common
+          make ARCH=arm64 gki_defconfig
+          make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 M=drivers/net/wireless/realtek/rtl8188eu modules
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: r8188eu-driver
+          path: common/drivers/net/wireless/realtek/rtl8188eu/r8188eu.ko
