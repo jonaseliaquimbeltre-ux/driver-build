@@ -10,7 +10,7 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential bc bison flex libssl-dev libncurses-dev git clang lld llvm crossbuild-essential-arm64
+          sudo apt-get install -y build-essential bc bison flex libssl-dev libncurses-dev git crossbuild-essential-arm64 gcc-aarch64-linux-gnu
 
       - name: Clone Android Kernel
         run: |
@@ -20,11 +20,14 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/lwfinger/rtl8188eu.git common/drivers/net/wireless/realtek/rtl8188eu
 
-      - name: Build Module
+      - name: Configure and Build Module
         run: |
           cd common
           make ARCH=arm64 gki_defconfig
-          make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 M=drivers/net/wireless/realtek/rtl8188eu modules -j$(nproc)
+          echo "CONFIG_WIRELESS=y" >> .config
+          echo "CONFIG_NETDEVICES=y" >> .config
+          echo "CONFIG_WLAN=y" >> .config
+          make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- KBUILD_EXTRA_SYMBOLS= CONFIG_RTL8188EU=m M=drivers/net/wireless/realtek/rtl8188eu modules -j$(nproc)
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
