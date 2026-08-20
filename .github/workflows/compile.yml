@@ -1,4 +1,4 @@
-name: Build RTL8188EU Kernel Module for A05 Kernel 6.6
+name: Build RTL8188EU Module
 
 on:
   workflow_dispatch:
@@ -12,25 +12,19 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential bc bison flex libssl-dev libncurses-dev git crossbuild-essential-arm64 gcc-aarch64-linux-gnu
 
-      - name: Clone Android Kernel 6.6 Tree
+      - name: Clone Stable Linux 6.6
         run: |
-          git clone --depth 1 -b android15-6.6 https://android.googlesource.com/kernel/common
+          git clone --depth 1 -b linux-6.6.y https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git
 
-      - name: Clone RTL8188EU Driver Source
+      - name: Build Driver Module
         run: |
-          git clone --depth 1 https://github.com/drygdryg/rtl8188eu.git common/drivers/net/wireless/realtek/rtl8188eu
-
-      - name: Prepare Config and Build
-        run: |
-          cd common
-          make ARCH=arm64 gki_defconfig
-          # Prepara la estructura de módulos del kernel
+          cd linux
+          make ARCH=arm64 defconfig
           make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- modules_prepare
-          # Compila el driver omitiendo errores de advertencias estricta de símbolos
-          make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- KBUILD_MODPOST_WARN=1 M=drivers/net/wireless/realtek/rtl8188eu modules -j$(nproc)
+          make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- M=drivers/staging/rtl8188eu modules -j$(nproc)
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: r8188eu-driver-kernel6.6
-          path: common/drivers/net/wireless/realtek/rtl8188eu/8188eu.ko
+          name: r8188eu-driver
+          path: linux/drivers/staging/rtl8188eu/r8188eu.ko
