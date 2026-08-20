@@ -1,4 +1,4 @@
-name: Build RTL8188EU Module
+name: Build RTL8188EU Kernel Module Exact
 
 on:
   workflow_dispatch:
@@ -12,19 +12,29 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential bc bison flex libssl-dev libncurses-dev git crossbuild-essential-arm64 gcc-aarch64-linux-gnu
 
-      - name: Clone Stable Linux 6.6
+      - name: Clone Linux Kernel 6.6
         run: |
           git clone --depth 1 -b linux-6.6.y https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git
 
-      - name: Build Driver Module
+      - name: Copy Device Config and Build
         run: |
+          # Copia el .config que subiste al repositorio
+          cp .config linux/.config
           cd linux
-          make ARCH=arm64 defconfig
+          
+          # Habilita el módulo de Realtek explícitamente en tu config
+          echo "CONFIG_STAGING=y" >> .config
+          echo "CONFIG_R8188EU=m" >> .config
+          
+          # Prepara la estructura con la configuración exacta de tu teléfono
+          make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
           make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- modules_prepare
+          
+          # Compila el archivo .ko
           make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- M=drivers/staging/rtl8188eu modules -j$(nproc)
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: r8188eu-driver
+          name: r8188eu-driver-A05
           path: linux/drivers/staging/rtl8188eu/r8188eu.ko
